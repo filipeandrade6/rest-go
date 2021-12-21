@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/filipeandrade6/rest-go/app/handlers"
 	"github.com/filipeandrade6/rest-go/app/handlers/camera"
@@ -32,10 +34,39 @@ func run(log *zap.SugaredLogger) error {
 
 	db := infile.New()
 
+	// Make a channel to listen for an interrupt or terminate signal from the OS.
+	// Use a buffered channel because the signal package requires it.
+	shutdown := make(chan os.Signal, 1)
+	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+
 	// TODO load cores
 	cameraCore := camera.NewCamera(log, db)
+	app := handlers.NewRouter(log, cameraCore)
 
-	app := handlers.NewApp(log, cameraCore)
+	// Make a channel to listen for errors coming from the listener. Use a
+	// buffered channel so the goroutine can exit if we don't collect this error.
+	serverErrors := make(chan error, 1)
 
-	http.ListenAndServe(":9001", app)
+	// * Start the service listening for api requests.
+	go func() {
+		log.Infow("startup", "status", "api router started", "host", "API ADDR AQUI!!!!") // TODO get addr from config
+		serverErrors <- http.ListenAndServe(":9001", app)
+	}()
+
+	// =========================================================================
+	// Shutdown
+
+	// Blocking main and waiting for shutdown.
+	select {
+	case err := <-serverErrors:
+		return fmt.Errorf("server error: %w", err)
+
+	case sig := <-shutdown:
+		log.Infow("shutdown", "status", "shutdown started", "signal", sig)
+		defer log.Infow("shutdown", "status", "shutdown complete", "signal", sig)
+
+		// TODO graceful stop the application
+	}
+
+	return nil
 }
