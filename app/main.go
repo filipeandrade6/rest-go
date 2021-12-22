@@ -8,9 +8,9 @@ import (
 	"syscall"
 
 	"github.com/filipeandrade6/rest-go/app/handlers"
-	"github.com/filipeandrade6/rest-go/app/handlers/camera"
-	"github.com/filipeandrade6/rest-go/app/infile"
+	"github.com/filipeandrade6/rest-go/pkg/database/inmemory"
 	"github.com/filipeandrade6/rest-go/pkg/logger"
+
 	"go.uber.org/zap"
 )
 
@@ -32,16 +32,15 @@ func main() {
 func run(log *zap.SugaredLogger) error {
 	// TODO Parse config
 
-	db := infile.New()
+	db := inmemory.New()
 
 	// Make a channel to listen for an interrupt or terminate signal from the OS.
 	// Use a buffered channel because the signal package requires it.
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
 
-	// TODO load cores
-	cameraCore := camera.NewCamera(log, db)
-	app := handlers.NewRouter(log, cameraCore)
+	// TODO load handler
+	api := handlers.NewAPI(log, db)
 
 	// Make a channel to listen for errors coming from the listener. Use a
 	// buffered channel so the goroutine can exit if we don't collect this error.
