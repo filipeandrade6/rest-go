@@ -47,3 +47,13 @@ func (h *Handlers) list(w http.ResponseWriter, r *http.Request) {
 
 // 	return nil
 // }
+
+func Routerer(db *inmemory.DB) http.Handler {
+	r := chi.NewRouter()
+
+	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("hi!"))
+	})
+
+	return r
+}

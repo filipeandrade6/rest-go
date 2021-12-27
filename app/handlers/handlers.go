@@ -6,7 +6,7 @@ import (
 
 	"github.com/filipeandrade6/rest-go/app/handlers/usergrp"
 	"github.com/filipeandrade6/rest-go/pkg/database/inmemory"
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/treastech/logger"
@@ -27,6 +27,7 @@ func NewAPI(log *zap.SugaredLogger, db *inmemory.DB) http.Handler {
 	// Protected routes
 	r.Mount("/users", usergrp.NewUsrGrp(db))
 	r.Mount("/abc", routerer(db))
+	r.Mount("/def", usergrp.Routerer(db))
 
 	// TODO userStore := userstore.New(log?, db?)
 	// TODO r.Mount("/users", usersresource.New(userStore, tokenAuth <- passado como dependencia de NewRouter))
