@@ -49,7 +49,7 @@ func run(log *zap.SugaredLogger) error {
 	// * Start the service listening for api requests.
 	go func() {
 		log.Infow("startup", "status", "api router started", "host", "API ADDR AQUI!!!!") // TODO get addr from config
-		serverErrors <- http.ListenAndServe(":9001", app)
+		serverErrors <- http.ListenAndServe(":9001", api)
 	}()
 
 	// =========================================================================
