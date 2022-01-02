@@ -1,10 +1,12 @@
 package usergrp
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/filipeandrade6/rest-go/internal/core/user"
 	"github.com/filipeandrade6/rest-go/pkg/database/inmemory"
+	"github.com/filipeandrade6/rest-go/pkg/web"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -31,4 +33,33 @@ func (h *Handlers) route() chi.Router { // * passar essa função para NewUsrGrp
 
 func (h *Handlers) list(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hi!"))
+}
+
+func (h *Handlers) create(w http.ResponseWriter, r *http.Request) {
+	// get values from ctx
+
+	var nu user.NewUser
+	if err := web.Decode(r, &nu); err != nil {
+		return fmt.Error("unable to decode payload: %w", err)
+	}
+
+	usr, err := h.User.Create(ctx, nu)
+	if err != nil {
+		return fmt.Errorf("user[%+v]: %w", &usr, err)
+	}
+
+	return web.Respond(ctx, w, usr, http.Statu)
+
+}
+
+func (h *Handlers) read(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (h *Handlers) update(w http.ResponseWriter, r *http.Request) {
+
+}
+
+func (h *Handlers) delete(w http.ResponseWriter, r *http.Request) {
+
 }

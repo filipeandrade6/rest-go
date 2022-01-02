@@ -8,7 +8,6 @@ import (
 	"github.com/filipeandrade6/rest-go/pkg/database/inmemory"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/render"
 	"github.com/treastech/logger"
 	"go.uber.org/zap"
 )
@@ -18,9 +17,8 @@ func NewAPI(log *zap.SugaredLogger, db *inmemory.DB) http.Handler {
 
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.RequestID)
-	r.Use(logger.Logger(log.Desugar()))                  // ! utilizar?
-	r.Use(render.SetContentType(render.ContentTypeJSON)) // ! utilizar?
-	r.Use(middleware.Timeout(60 * time.Second))          // * pensar em um timeout.
+	r.Use(logger.Logger(log.Desugar()))         // ! utilizar?
+	r.Use(middleware.Timeout(60 * time.Second)) // * pensar em um timeout.
 
 	// Protected routes
 	r.Group(func(r chi.Router) {
