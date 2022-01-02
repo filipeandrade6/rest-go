@@ -20,33 +20,24 @@ func NewAPI(log *zap.SugaredLogger, db *inmemory.DB) http.Handler {
 	r.Use(middleware.RequestID)
 	r.Use(logger.Logger(log.Desugar()))                  // ! utilizar?
 	r.Use(render.SetContentType(render.ContentTypeJSON)) // ! utilizar?
-	r.Use(middleware.Timeout(60 * time.Second))
-
-	r.Get("/", list)
+	r.Use(middleware.Timeout(60 * time.Second))          // * pensar em um timeout.
 
 	// Protected routes
-	r.Mount("/users", usergrp.NewUsrGrp(db))
-	r.Mount("/abc", routerer(db))
-	r.Mount("/def", usergrp.Routerer(db))
+	r.Group(func(r chi.Router) {
+		// r.Use(jwtauth.Verifier(tokenAuth))
+		// NOTE jwtauth.Authenticator should be added
+		// by different router. For example, some routes
+		// allow GET and disallow POST
 
-	// TODO userStore := userstore.New(log?, db?)
-	// TODO r.Mount("/users", usersresource.New(userStore, tokenAuth <- passado como dependencia de NewRouter))
+		r.Mount("/users", usergrp.NewUsrGrp(db)) // * passar o tokenAuth como dependencia.
+	})
 
 	// Public routes
-	r.Group(func(r chi.Router) {})
-
-	return r
-}
-
-func list(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("hi!"))
-}
-
-func routerer(db *inmemory.DB) http.Handler {
-	r := chi.NewRouter()
-
-	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("hi!"))
+	r.Group(func(r chi.Router) {
+		r.Get("/", func(w http.ResponseWriter, r *http.Request) {
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("hello world!"))
+		})
 	})
 
 	return r
