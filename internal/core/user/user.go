@@ -4,17 +4,18 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/filipeandrade6/rest-go/internal/core/user/db"
 	"github.com/filipeandrade6/rest-go/pkg/database/inmemory"
 )
 
 type Core struct {
-	db db.Store
+	// db db.Store
+	db *inmemory.DB
 }
 
 func NewCore(db *inmemory.DB) Core {
 	return Core{
-		db: db.NewStore(db),
+		// db: db.NewStore(db),
+		db: inmemory.New(),
 	}
 }
 
