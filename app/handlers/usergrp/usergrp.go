@@ -19,14 +19,10 @@ func NewUsrGrp(db *inmemory.DB) http.Handler {
 	hr := Handlers{
 		User: user.NewCore(db),
 	}
-
-	return hr.route()
-}
-
-func (h *Handlers) route() chi.Router { // * passar essa função para NewUsrGrp?
+	
 	r := chi.NewRouter()
 
-	r.Get("/", h.list)
+	r.Get("/", hr.list)
 
 	return r
 }
@@ -40,16 +36,15 @@ func (h *Handlers) create(w http.ResponseWriter, r *http.Request) {
 
 	var nu user.NewUser
 	if err := web.Decode(r, &nu); err != nil {
-		return fmt.Error("unable to decode payload: %w", err)
+		fmt.Println(err)
 	}
 
 	usr, err := h.User.Create(ctx, nu)
 	if err != nil {
-		return fmt.Errorf("user[%+v]: %w", &usr, err)
+		fmt.Println(err)
 	}
 
-	return web.Respond(ctx, w, usr, http.Statu)
-
+	w.Write([]byte('usuario criado'))
 }
 
 func (h *Handlers) read(w http.ResponseWriter, r *http.Request) {
