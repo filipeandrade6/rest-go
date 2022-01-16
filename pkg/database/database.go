@@ -7,7 +7,6 @@ import (
 	"net/url"
 
 	"github.com/jackc/pgx/v4/pgxpool"
-	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 )
 
@@ -61,22 +60,25 @@ func Connect(cfg Config) (*pgxpool.Pool, error) {
 
 // NamedExecContext is a helper function to execute a CUD operation with
 // logging and tracing.
-func Query(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, data interface{}) error {
+func Exec(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string) error {
 	// q := queryString(query, data)
 	// log.Infow("database.NamedExecContext", "traceid", web.GetTraceID(ctx), "query", q)
 
-	rows, err := db.Query(
-		context.Background(),
-		"SELECT * FROM ($1)",
-		query,
-	)
+	// TODO remover as metatags dos models de db
 
-	if _, err := sqlx.NamedExecContext(ctx, db, query, data); err != nil {
-		return err
+	commandTag, err := db.Exec(ctx, query, args)
+	if err != nil {
+		return err // TODO melhorar
+	}
+
+	if commandTag.RowsAffected() != 1 {
+		return ErrDBNotFound
 	}
 
 	return nil
 }
+
+func QuerySlice(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string, data) interface
 
 // NamedQuerySlice is a helper function for executing queries that return a collection of data to be unmarshaled into a slice.
 // NamedQueryStruct is a helper function for executing queries that return a single value to be unmarshalled into a struct type.
