@@ -2,15 +2,20 @@ package db
 
 import (
 	"fmt"
-
-	"github.com/filipeandrade6/rest-go/pkg/database/inmemory"
 )
 
-type Store struct {
-	db *inmemory.DB
+type Database interface {
+	Create(key, value string) error
+	Read(key string) (string, error)
+	Update(key, value string) error
+	Delete(key string) error
 }
 
-func NewStore(db *inmemory.DB) Store {
+type Store struct {
+	db Database
+}
+
+func NewStore(db Database) Store {
 	return Store{
 		db: db,
 	}
