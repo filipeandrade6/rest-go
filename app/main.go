@@ -55,6 +55,8 @@ func run(log *zap.SugaredLogger) error {
 	// =========================================================================
 	// Shutdown
 
+	// https://github.com/go-chi/chi/blob/master/_examples/graceful/main.go
+
 	// Blocking main and waiting for shutdown.
 	select {
 	case err := <-serverErrors:
