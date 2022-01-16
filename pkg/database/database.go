@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"net/url"
+	"reflect"
 
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
@@ -78,7 +79,35 @@ func Exec(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query s
 	return nil
 }
 
-func QuerySlice(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string, data) interface
+func QuerySlice(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string, result interface{}) error {
+	// log.Infow("database.NamedExecContext", "traceid", web.GetTraceID(ctx), "query", q)
+
+	val := reflect.ValueOf(result)
+	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+		return errors.New("must provide pointer to a slice")
+	}
+
+	rows, err := db.Query(ctx, query, args)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	slice := val.Elem()
+	for rows.Next() {
+		v := reflect.New(slice.Type().Elem())
+		if err := rows.Scan(v.Interface()); err != nil {
+			return err
+		}
+		slice.Set(reflect.Append(slice, v.Elem()))
+	}
+
+	if rows.Err() != nil {
+		return err
+	}
+
+	return nil
+}
 
 // NamedQuerySlice is a helper function for executing queries that return a collection of data to be unmarshaled into a slice.
 // NamedQueryStruct is a helper function for executing queries that return a single value to be unmarshalled into a struct type.
