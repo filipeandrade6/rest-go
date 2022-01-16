@@ -62,14 +62,13 @@ func Connect(cfg Config) (*pgxpool.Pool, error) {
 // NamedExecContext is a helper function to execute a CUD operation with
 // logging and tracing.
 func Exec(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string) error {
-	// q := queryString(query, data)
 	// log.Infow("database.NamedExecContext", "traceid", web.GetTraceID(ctx), "query", q)
 
 	// TODO remover as metatags dos models de db
 
 	commandTag, err := db.Exec(ctx, query, args)
 	if err != nil {
-		return err // TODO melhorar
+		return err
 	}
 
 	if commandTag.RowsAffected() != 1 {
@@ -79,6 +78,8 @@ func Exec(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query s
 	return nil
 }
 
+// NamedQuerySlice is a helper function for executing queries that return a
+// collection of data to be unmarshalled into a slice.
 func QuerySlice(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string, result interface{}) error {
 	// log.Infow("database.NamedExecContext", "traceid", web.GetTraceID(ctx), "query", q)
 
@@ -103,6 +104,19 @@ func QuerySlice(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, q
 	}
 
 	if rows.Err() != nil {
+		return err
+	}
+
+	return nil
+}
+
+// NamedQueryStruct is a helper function for executing queries that return a
+// single value to be unmarshalled into a struct type.
+func QueryStruct(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string, result interface{}) error {
+	// log.Infow("database.NamedQueryStruct", "traceid", web.GetTraceID(ctx), "query", q)
+
+	err := db.QueryRow(ctx, query, args).Scan(&result)
+	if err != nil {
 		return err
 	}
 
