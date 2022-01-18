@@ -3,11 +3,22 @@ package db
 import "time"
 
 type User struct {
-	ID           string    `db:"user_id"`
-	Name         string    `db:"name"`
-	Email        string    `db:"email"`
-	Roles        []string  `db:"roles"`
-	PasswordHash []byte    `db:"password_hash"`
-	DateCreated  time.Time `db:"date_created"`
-	DateUpdated  time.Time `db:"date_updated"`
+	ID           string
+	Name         string
+	Email        string
+	Roles        []string
+	PasswordHash []byte
+	DateCreated  time.Time
+	DateUpdated  time.Time
+}
+
+func (u *User) toSlice() []string {
+	return [7]string{
+		u.ID,
+		u.Name,
+		u.Email,
+		u.Roles[],
+		string(u.PasswordHash),
+		u.Da
+	}
 }

@@ -59,7 +59,7 @@ func Connect(cfg Config) (*pgxpool.Pool, error) {
 // <struct> Transactor interface needed to begin transaction.
 // WithinTran runs passed function and do commit/rollback at the end.
 
-// NamedExecContext is a helper function to execute a CUD operation with
+// ExecContext is a helper function to execute a CUD operation with
 // logging and tracing.
 func Exec(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string) error {
 	// log.Infow("database.NamedExecContext", "traceid", web.GetTraceID(ctx), "query", q)
@@ -78,7 +78,7 @@ func Exec(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query s
 	return nil
 }
 
-// NamedQuerySlice is a helper function for executing queries that return a
+// QuerySlice is a helper function for executing queries that return a
 // collection of data to be unmarshalled into a slice.
 func QuerySlice(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string, result interface{}) error {
 	// log.Infow("database.NamedExecContext", "traceid", web.GetTraceID(ctx), "query", q)
@@ -110,7 +110,7 @@ func QuerySlice(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, q
 	return nil
 }
 
-// NamedQueryStruct is a helper function for executing queries that return a
+// QueryStruct is a helper function for executing queries that return a
 // single value to be unmarshalled into a struct type.
 func QueryStruct(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string, result interface{}) error {
 	// log.Infow("database.NamedQueryStruct", "traceid", web.GetTraceID(ctx), "query", q)
@@ -122,7 +122,3 @@ func QueryStruct(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, 
 
 	return nil
 }
-
-// NamedQuerySlice is a helper function for executing queries that return a collection of data to be unmarshaled into a slice.
-// NamedQueryStruct is a helper function for executing queries that return a single value to be unmarshalled into a struct type.
-// queryString provides a pretty print version of the query and parameters.
