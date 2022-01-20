@@ -8,7 +8,7 @@ import (
 	"syscall"
 
 	"github.com/filipeandrade6/rest-go/app/handlers"
-	"github.com/filipeandrade6/rest-go/pkg/database/inmemory"
+	"github.com/filipeandrade6/rest-go/pkg/database"
 	"github.com/filipeandrade6/rest-go/pkg/logger"
 
 	"go.uber.org/zap"
@@ -32,7 +32,7 @@ func main() {
 func run(log *zap.SugaredLogger) error {
 	// TODO Parse config
 
-	db := inmemory.New()
+	db := database.Open()
 
 	// Make a channel to listen for an interrupt or terminate signal from the OS.
 	// Use a buffered channel because the signal package requires it.
