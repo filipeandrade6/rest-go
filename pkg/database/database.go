@@ -4,10 +4,15 @@ package database
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"reflect"
+	"strings"
+	"time"
 
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/filipeandrade6/rest-go/pkg/web"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq" // Calls init function.
 	"go.uber.org/zap"
 )
 
@@ -28,7 +33,8 @@ type Config struct {
 	DisableTLS   bool
 }
 
-func Connect(cfg Config) (*pgxpool.Pool, error) {
+// Open knows how to open a database connection based on the configuration.
+func Open(cfg Config) (*sqlx.DB, error) {
 	sslMode := "require"
 	if cfg.DisableTLS {
 		sslMode = "disable"
@@ -46,49 +52,119 @@ func Connect(cfg Config) (*pgxpool.Pool, error) {
 		RawQuery: q.Encode(),
 	}
 
-	pool, err := pgxpool.Connect(context.Background(), u.String())
+	db, err := sqlx.Open("postgres", u.String())
 	if err != nil {
-		return nil, err // TODO ErrDBnotfound?
+		return nil, err
 	}
+	db.SetMaxIdleConns(cfg.MaxIdleConns)
+	db.SetMaxOpenConns(cfg.MaxOpenConns)
 
-	return pool, nil
+	return db, nil
 }
 
-// TODOs
-// StatusCheck returns nil if it can successfully talk to the database. It returns a non-nil error otherwise.
-// <struct> Transactor interface needed to begin transaction.
-// WithinTran runs passed function and do commit/rollback at the end.
+// StatusCheck returns nil if it can successfully talk to the database. It
+// returns a non-nil error otherwise.
+func StatusCheck(ctx context.Context, db *sqlx.DB) error {
 
-// ExecContext is a helper function to execute a CUD operation with
-// logging and tracing.
-func Exec(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string) error {
-	// log.Infow("database.NamedExecContext", "traceid", web.GetTraceID(ctx), "query", q)
-
-	// TODO remover as metatags dos models de db
-
-	commandTag, err := db.Exec(ctx, query, args)
-	if err != nil {
-		return err
+	// First check we can ping the database.
+	var pingError error
+	for attempts := 1; ; attempts++ {
+		pingError = db.Ping()
+		if pingError == nil {
+			break
+		}
+		time.Sleep(time.Duration(attempts) * 100 * time.Millisecond)
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
 	}
 
-	if commandTag.RowsAffected() != 1 {
-		return ErrDBNotFound
+	// Make sure we didn't timeout or be cancelled.
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	// Run a simple query to determine connectivity. Running this query forces a
+	// round trip through the database.
+	const q = `SELECT true`
+	var tmp bool
+	return db.QueryRowContext(ctx, q).Scan(&tmp)
+}
+
+// Transactor interface needed to begin transaction.
+type Transactor interface {
+	Beginx() (*sqlx.Tx, error)
+}
+
+// WithinTran runs passed function and do commit/rollback at the end.
+func WithinTran(ctx context.Context, log *zap.SugaredLogger, db Transactor, fn func(sqlx.ExtContext) error) error {
+	traceID := web.GetTraceID(ctx)
+
+	// Begin the transaction.
+	log.Infow("begin tran", "traceid", traceID)
+	tx, err := db.Beginx()
+	if err != nil {
+		return fmt.Errorf("begin tran: %w", err)
+	}
+
+	// Mark to the defer function a rollback is required.
+	mustRollback := true
+
+	// Set up a defer function for rolling back the transaction. If
+	// mustRollback is true it means the call to fn failed, and we
+	// need to roll back the transaction.
+	defer func() {
+		if mustRollback {
+			log.Infow("rollback tran", "traceid", traceID)
+			if err := tx.Rollback(); err != nil {
+				log.Errorw("unable to rollback tran", "traceid", traceID, "ERROR", err)
+			}
+		}
+	}()
+
+	// Execute the code inside the transaction. If the function
+	// fails, return the error and the defer function will roll back.
+	if err := fn(tx); err != nil {
+		return fmt.Errorf("exec tran: %w", err)
+	}
+
+	// Disarm the deferred rollback.
+	mustRollback = false
+
+	// Commit the transaction.
+	log.Infow("commit tran", "traceid", traceID)
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit tran: %w", err)
 	}
 
 	return nil
 }
 
-// QuerySlice is a helper function for executing queries that return a
-// collection of data to be unmarshalled into a slice.
-func QuerySlice(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string, result interface{}) error {
-	// log.Infow("database.NamedExecContext", "traceid", web.GetTraceID(ctx), "query", q)
+// NamedExecContext is a helper function to execute a CUD operation with
+// logging and tracing.
+func NamedExecContext(ctx context.Context, log *zap.SugaredLogger, db sqlx.ExtContext, query string, data interface{}) error {
+	q := queryString(query, data)
+	log.Infow("database.NamedExecContext", "traceid", web.GetTraceID(ctx), "query", q)
 
-	val := reflect.ValueOf(result)
-	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
-		return errors.New("must provide pointer to a slice")
+	if _, err := sqlx.NamedExecContext(ctx, db, query, data); err != nil {
+		return err
 	}
 
-	rows, err := db.Query(ctx, query, args)
+	return nil
+}
+
+// NamedQuerySlice is a helper function for executing queries that return a
+// collection of data to be unmarshalled into a slice.
+func NamedQuerySlice(ctx context.Context, log *zap.SugaredLogger, db sqlx.ExtContext, query string, data interface{}, dest interface{}) error {
+	q := queryString(query, data)
+	log.Infow("database.NamedQuerySlice", "traceid", web.GetTraceID(ctx), "query", q)
+
+	val := reflect.ValueOf(dest)
+	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+		return errors.New("must provide a pointer to a slice")
+	}
+
+	rows, err := sqlx.NamedQueryContext(ctx, db, query, data)
 	if err != nil {
 		return err
 	}
@@ -97,28 +173,60 @@ func QuerySlice(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, q
 	slice := val.Elem()
 	for rows.Next() {
 		v := reflect.New(slice.Type().Elem())
-		if err := rows.Scan(v.Interface()); err != nil {
+		if err := rows.StructScan(v.Interface()); err != nil {
 			return err
 		}
 		slice.Set(reflect.Append(slice, v.Elem()))
 	}
 
-	if rows.Err() != nil {
+	return nil
+}
+
+// NamedQueryStruct is a helper function for executing queries that return a
+// single value to be unmarshalled into a struct type.
+func NamedQueryStruct(ctx context.Context, log *zap.SugaredLogger, db sqlx.ExtContext, query string, data interface{}, dest interface{}) error {
+	q := queryString(query, data)
+	log.Infow("database.NamedQueryStruct", "traceid", web.GetTraceID(ctx), "query", q)
+
+	rows, err := sqlx.NamedQueryContext(ctx, db, query, data)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if !rows.Next() {
+		return ErrDBNotFound
+	}
+
+	if err := rows.StructScan(dest); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// QueryStruct is a helper function for executing queries that return a
-// single value to be unmarshalled into a struct type.
-func QueryStruct(ctx context.Context, log *zap.SugaredLogger, db *pgxpool.Pool, query string, args []string, result interface{}) error {
-	// log.Infow("database.NamedQueryStruct", "traceid", web.GetTraceID(ctx), "query", q)
-
-	err := db.QueryRow(ctx, query, args).Scan(&result)
+// queryString provides a pretty print version of the query and parameters.
+func queryString(query string, args ...interface{}) string {
+	query, params, err := sqlx.Named(query, args)
 	if err != nil {
-		return err
+		return err.Error()
 	}
 
-	return nil
+	for _, param := range params {
+		var value string
+		switch v := param.(type) {
+		case string:
+			value = fmt.Sprintf("%q", v)
+		case []byte:
+			value = fmt.Sprintf("%q", string(v))
+		default:
+			value = fmt.Sprintf("%v", v)
+		}
+		query = strings.Replace(query, "?", value, 1)
+	}
+
+	query = strings.ReplaceAll(query, "\t", "")
+	query = strings.ReplaceAll(query, "\n", " ")
+
+	return strings.Trim(query, " ")
 }

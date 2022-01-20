@@ -1,29 +1,47 @@
+// Package db contains user related CRUD functionality.
 package db
 
 import (
 	"context"
 	"fmt"
 
-	"github.com/ardanlabs/service/business/sys/database"
+	"github.com/filipeandrade6/rest-go/pkg/database"
+	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
-type Database interface {
-	Create(key, value string) error
-	Read(key string) (string, error)
-	Update(key, value string) error
-	Delete(key string) error
-}
-
+// Store manages the set of APIs for user access.
 type Store struct {
-	// log
-	// transactor
-	// isWithinTran
-	db Database
+	log          *zap.SugaredLogger
+	tr           database.Transactor
+	db           sqlx.ExtContext
+	isWithinTran bool
 }
 
-func NewStore(db Database) Store {
+// NewStore constructs a data for api access.
+func NewStore(log *zap.SugaredLogger, db *sqlx.DB) Store {
 	return Store{
-		db: db,
+		log: log,
+		tr:  db,
+		db:  db,
+	}
+}
+
+// WithinTran runs passed function and do commit/rollback at the end.
+func (s Store) WithinTran(ctx context.Context, fn func(sqlx.ExtContext) error) error {
+	if s.isWithinTran {
+		return fn(s.db)
+	}
+	return database.WithinTran(ctx, s.log, s.tr, fn)
+}
+
+// Tran return new Store with transaction in it.
+func (s Store) Tran(tx sqlx.ExtContext) Store {
+	return Store{
+		log:          s.log,
+		tr:           s.tr,
+		db:           tx,
+		isWithinTran: true,
 	}
 }
 
@@ -33,12 +51,9 @@ func (s Store) Create(ctx context.Context, usr User) error {
 	INSERT INTO users
 		(user_id, name, email, password_hash, roles, date_created, date_updated)
 	VALUES
-		(:user_id, :name, :email, :password_hash, :roles, :date_created, :date_updated)
-		($1, $2, $3, $4, $5, $6, $7)`
+		(:user_id, :name, :email, :password_hash, :roles, :date_created, :date_updated)`
 
-	params = [7]string{usr.ID, usr.Name, usr.Email, string(usr.PasswordHash) /* ,*/, usr.DateCreated, usr.DateUpdated}
-
-	if err := database.ExecContext(ctx /*s.log,*/, s.db, q, usr); err != nil {
+	if err := database.NamedExecContext(ctx, s.log, s.db, q, usr); err != nil {
 		return fmt.Errorf("inserting user: %w", err)
 	}
 
