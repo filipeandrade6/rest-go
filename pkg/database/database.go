@@ -1,6 +1,20 @@
 // Package database provides support for access the database.
 package database
 
+// TODO https://github.com/jackc/pgxutil/blob/master/pgxutil.go
+// TODO https://github.com/jackc/pgxutil/blob/master/pgxutil.go
+// TODO https://github.com/jackc/pgxutil/blob/master/pgxutil.go
+// TODO https://github.com/jackc/pgxutil/blob/master/pgxutil.go
+// TODO https://github.com/jackc/pgxutil/blob/master/pgxutil.go
+// TODO utilizar somente o de cima, pois ele contem já as abstrações
+
+// TODO https://github.com/georgysavva/scany
+// TODO https://github.com/georgysavva/scany
+// TODO https://github.com/georgysavva/scany
+// TODO https://github.com/georgysavva/scany
+// TODO https://github.com/georgysavva/scany
+// TODO https://github.com/georgysavva/scany
+
 import (
 	"context"
 	"errors"
@@ -139,6 +153,8 @@ func WithinTran(ctx context.Context, log *zap.SugaredLogger, db Transactor, fn f
 
 	return nil
 }
+
+// func ExecContext(ctx context.Context, log *zap.SugaredLogger, db )
 
 // NamedExecContext is a helper function to execute a CUD operation with
 // logging and tracing.
