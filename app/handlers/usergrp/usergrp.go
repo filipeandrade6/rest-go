@@ -8,9 +8,9 @@ import (
 	"net/http"
 
 	"github.com/filipeandrade6/rest-go/internal/core/user"
-	"github.com/filipeandrade6/rest-go/pkg/database/inmemory"
 	"github.com/filipeandrade6/rest-go/pkg/web"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 // https://github.com/go-chi/chi/blob/master/_examples/rest/main.go
@@ -20,7 +20,7 @@ type Handlers struct {
 	// Auth *auth.Auth
 }
 
-func NewUsrGrp(db *inmemory.DB) http.Handler {
+func NewUsrGrp(db *pgxpool.Pool) http.Handler {
 	hr := Handlers{
 		User: user.NewCore(db),
 	}

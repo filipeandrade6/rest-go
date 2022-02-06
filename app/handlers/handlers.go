@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"github.com/filipeandrade6/rest-go/app/handlers/usergrp"
-	"github.com/filipeandrade6/rest-go/pkg/database/inmemory"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treastech/logger"
 	"go.uber.org/zap"
 )
 
-func NewAPI(log *zap.SugaredLogger, db *inmemory.DB) http.Handler {
+func NewAPI(log *zap.SugaredLogger, db *pgxpool.Pool) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Recoverer)
