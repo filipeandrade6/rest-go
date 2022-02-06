@@ -1,0 +1,8 @@
+version: 1
+packages:
+  - path: "tutorial"
+    name: "tutorial"
+    sql_package: "pgx/v4"
+    engine: "postgresql"
+    schema: "schema.sql"
+    queries: "query.sql"
