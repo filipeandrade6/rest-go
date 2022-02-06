@@ -5,11 +5,12 @@ package user
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
 
-	"github.com/filipeandrade6/rest-go/internal/core/user/db"
+	"github.com/filipeandrade6/rest-go/internal/data/db"
 	"github.com/filipeandrade6/rest-go/pkg/auth"
 	"github.com/filipeandrade6/rest-go/pkg/database"
 	"github.com/filipeandrade6/rest-go/pkg/validate"
@@ -28,13 +29,21 @@ var (
 
 // Core manages the set of APIs for user access.
 type Core struct {
-	store db.Store
+	log   *zap.SugaredLogger
+	store db.DBTX
 }
 
+// // NewCore constructs a core for user api access.
+// func NewCore(log *zap.SugaredLogger, sqlxDB *sqlx.DB) Core {
+// 	return Core{
+// 		store: db.NewStore(log, sqlxDB),
+// 	}
+// }
+
 // NewCore constructs a core for user api access.
-func NewCore(log *zap.SugaredLogger, sqlxDB *sqlx.DB) Core {
+func NewCore(log *zap.SugaredLogger, dbD *sql.DB) Core {
 	return Core{
-		store: db.NewStore(log, sqlxDB),
+		store: db.New(dbD),
 	}
 }
 

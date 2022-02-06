@@ -32,7 +32,17 @@ func main() {
 func run(log *zap.SugaredLogger) error {
 	// TODO Parse config
 
-	db := database.Open()
+	db, err := database.Open(database.Config{
+		User:         "postgres",
+		Password:     "secret",
+		Host:         "localhost",
+		Name:         "rest",
+		MaxOpenConns: 20,
+		DisableTLS:   true,
+	})
+	if err != nil {
+		return fmt.Errorf("database error: %w", err)
+	}
 
 	// Make a channel to listen for an interrupt or terminate signal from the OS.
 	// Use a buffered channel because the signal package requires it.

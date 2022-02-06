@@ -1,18 +1,18 @@
 package handlers
 
 import (
+	"database/sql"
 	"net/http"
 	"time"
 
 	"github.com/filipeandrade6/rest-go/app/handlers/usergrp"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/treastech/logger"
 	"go.uber.org/zap"
 )
 
-func NewAPI(log *zap.SugaredLogger, db *pgxpool.Pool) http.Handler {
+func NewAPI(log *zap.SugaredLogger, db *sql.DB) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Recoverer)
@@ -27,7 +27,7 @@ func NewAPI(log *zap.SugaredLogger, db *pgxpool.Pool) http.Handler {
 		// by different router. For example, some routes
 		// allow GET and disallow POST
 
-		r.Mount("/users", usergrp.NewUsrGrp(db)) // * passar o tokenAuth como dependencia.
+		r.Mount("/users", usergrp.NewUsrGrp(log, db)) // * passar o tokenAuth como dependencia.
 	})
 
 	// Public routes
