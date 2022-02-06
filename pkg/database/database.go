@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"net/url"
 
-	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 )
 
 // Set of error variables for CRUD operations.
@@ -27,7 +27,7 @@ type Config struct {
 }
 
 // Open knows how to open a database connection based on the configuration.
-func Open(cfg Config) (*pgx.Conn, error) {
+func Open(cfg Config) (*pgxpool.Pool, error) {
 	sslMode := "require"
 	if cfg.DisableTLS {
 		sslMode = "disable"
@@ -46,7 +46,7 @@ func Open(cfg Config) (*pgx.Conn, error) {
 		RawQuery: q.Encode(),
 	}
 
-	db, err := pgx.Connect(context.Background(), u.String()) // TODO: injetar contexto
+	db, err := pgxpool.Connect(context.Background(), u.String()) // TODO: injetar contexto
 	if err != nil {
 		return nil, err
 	}

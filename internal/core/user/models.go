@@ -2,9 +2,6 @@ package user
 
 import (
 	"time"
-	"unsafe"
-
-	"github.com/filipeandrade6/rest-go/internal/core/user/db"
 )
 
 // User represents an individual user.
@@ -43,15 +40,15 @@ type UpdateUser struct {
 
 // =============================================================================
 
-func toUser(dbUsr db.User) User {
-	pu := (*User)(unsafe.Pointer(&dbUsr))
-	return *pu
-}
+// func toUser(dbUsr db.User) User {
+// 	pu := (*User)(unsafe.Pointer(&dbUsr))
+// 	return *pu
+// }
 
-func toUserSlice(dbUsrs []db.User) []User {
-	users := make([]User, len(dbUsrs))
-	for i, dbUsr := range dbUsrs {
-		users[i] = toUser(dbUsr)
-	}
-	return users
-}
+// func toUserSlice(dbUsrs []db.User) []User {
+// 	users := make([]User, len(dbUsrs))
+// 	for i, dbUsr := range dbUsrs {
+// 		users[i] = toUser(dbUsr)
+// 	}
+// 	return users
+// }
