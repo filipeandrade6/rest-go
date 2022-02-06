@@ -1,18 +1,18 @@
 package handlers
 
 import (
-	"database/sql"
 	"net/http"
 	"time"
 
 	"github.com/filipeandrade6/rest-go/app/handlers/usergrp"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v4"
 	"github.com/treastech/logger"
 	"go.uber.org/zap"
 )
 
-func NewAPI(log *zap.SugaredLogger, db *sql.DB) http.Handler {
+func NewAPI(log *zap.SugaredLogger, db *pgx.Conn) http.Handler {
 	r := chi.NewRouter()
 
 	r.Use(middleware.Recoverer)

@@ -5,7 +5,6 @@ package user
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/filipeandrade6/rest-go/pkg/database"
 	"github.com/filipeandrade6/rest-go/pkg/validate"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
@@ -30,7 +30,7 @@ var (
 // Core manages the set of APIs for user access.
 type Core struct {
 	log   *zap.SugaredLogger
-	store db.DBTX
+	store *db.Queries
 }
 
 // // NewCore constructs a core for user api access.
@@ -41,9 +41,10 @@ type Core struct {
 // }
 
 // NewCore constructs a core for user api access.
-func NewCore(log *zap.SugaredLogger, dbD *sql.DB) Core {
+func NewCore(log *zap.SugaredLogger, d *pgx.Conn) Core {
 	return Core{
-		store: db.New(dbD),
+		log:   log,
+		store: db.New(d),
 	}
 }
 

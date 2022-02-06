@@ -2,10 +2,12 @@
 package database
 
 import (
-	"database/sql"
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
+
+	"github.com/jackc/pgx/v4"
 )
 
 // Set of error variables for CRUD operations.
@@ -25,7 +27,7 @@ type Config struct {
 }
 
 // Open knows how to open a database connection based on the configuration.
-func Open(cfg Config) (*sql.DB, error) {
+func Open(cfg Config) (*pgx.Conn, error) {
 	sslMode := "require"
 	if cfg.DisableTLS {
 		sslMode = "disable"
@@ -44,7 +46,7 @@ func Open(cfg Config) (*sql.DB, error) {
 		RawQuery: q.Encode(),
 	}
 
-	db, err := sql.Open("pgx", u.String())
+	db, err := pgx.Connect(context.Background(), u.String()) // TODO: injetar contexto
 	if err != nil {
 		return nil, err
 	}

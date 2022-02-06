@@ -2,7 +2,6 @@ package usergrp
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
@@ -11,6 +10,7 @@ import (
 	"github.com/filipeandrade6/rest-go/internal/core/user"
 	"github.com/filipeandrade6/rest-go/pkg/web"
 	"github.com/go-chi/chi/v5"
+	"github.com/jackc/pgx/v4"
 	"go.uber.org/zap"
 )
 
@@ -21,7 +21,7 @@ type Handlers struct {
 	// Auth *auth.Auth
 }
 
-func NewUsrGrp(log *zap.SugaredLogger,  *sql.DB) http.Handler {
+func NewUsrGrp(log *zap.SugaredLogger, db *pgx.Conn) http.Handler {
 	hr := Handlers{
 		User: user.NewCore(log, db),
 	}
