@@ -16,3 +16,7 @@ TODO:
 * use a third-party auth library
 
 * utilizar generator para os sql
+
+#### Gerar sql
+
+`~/go/bin/sqlc generate -f ./internal/data/dbschema/sql/sqlc.yaml`

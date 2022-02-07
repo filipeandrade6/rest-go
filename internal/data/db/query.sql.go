@@ -63,11 +63,11 @@ func (q *Queries) DeleteUser(ctx context.Context, userID uuid.UUID) error {
 
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT user_id, name, email, roles, password_hash, date_created, date_updated FROM users
-WHERE email = $1 LIMIT $1
+WHERE email = $1 LIMIT 1
 `
 
-func (q *Queries) GetUserByEmail(ctx context.Context, limit int32) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByEmail, limit)
+func (q *Queries) GetUserByEmail(ctx context.Context, email sql.NullString) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByEmail, email)
 	var i User
 	err := row.Scan(
 		&i.UserID,
@@ -83,11 +83,11 @@ func (q *Queries) GetUserByEmail(ctx context.Context, limit int32) (User, error)
 
 const getUserByID = `-- name: GetUserByID :one
 SELECT user_id, name, email, roles, password_hash, date_created, date_updated FROM users
-WHERE user_id = $1 LIMIT $1
+WHERE user_id = $1 LIMIT 1
 `
 
-func (q *Queries) GetUserByID(ctx context.Context, limit int32) (User, error) {
-	row := q.db.QueryRow(ctx, getUserByID, limit)
+func (q *Queries) GetUserByID(ctx context.Context, userID uuid.UUID) (User, error) {
+	row := q.db.QueryRow(ctx, getUserByID, userID)
 	var i User
 	err := row.Scan(
 		&i.UserID,
@@ -103,11 +103,17 @@ func (q *Queries) GetUserByID(ctx context.Context, limit int32) (User, error) {
 
 const listUsers = `-- name: ListUsers :many
 SELECT user_id, name, email, roles, password_hash, date_created, date_updated FROM users
-ORDER BY name
+ORDER BY name OFFSET $1 ROWS
+FETCH NEXT $2 ROWS ONLY
 `
 
-func (q *Queries) ListUsers(ctx context.Context) ([]User, error) {
-	rows, err := q.db.Query(ctx, listUsers)
+type ListUsersParams struct {
+	Offset int32
+	Limit  int32
+}
+
+func (q *Queries) ListUsers(ctx context.Context, arg ListUsersParams) ([]User, error) {
+	rows, err := q.db.Query(ctx, listUsers, arg.Offset, arg.Limit)
 	if err != nil {
 		return nil, err
 	}

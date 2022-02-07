@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/filipeandrade6/rest-go/internal/data/db"
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
 )
@@ -113,23 +114,28 @@ func NewCore(log *zap.SugaredLogger, d *pgxpool.Pool) Core {
 // 	return nil
 // }
 
-// // Delete removes a user from the database.
-// func (c Core) Delete(ctx context.Context, userID string) error {
-// 	if err := validate.CheckID(userID); err != nil {
-// 		return ErrInvalidID
-// 	}
+// Delete removes a user from the database.
+func (c Core) Delete(ctx context.Context, userID string) error {
+	id, err := uuid.Parse(userID)
+	if err != nil {
+		return ErrInvalidID
+	}
 
-// 	if err := c.store.Delete(ctx, userID); err != nil {
-// 		return fmt.Errorf("delete: %w", err)
-// 	}
+	if err := c.store.DeleteUser(ctx, id); err != nil {
+		return fmt.Errorf("delete: %w", err)
+	}
 
-// 	return nil
-// }
+	return nil
+}
 
 // Query retrieves a list of existing users from the database.
-func (c Core) Query(ctx context.Context, pageNumber int, rowsPerPage int) ([]User, error) {
-	dbUsers, err := c.store.Query(ctx, pageNumber, rowsPerPage)
-	dbUsers, err := c.store.ListUsers(ctx)
+func (c Core) List(ctx context.Context, pageNumber int, rowsPerPage int) ([]User, error) {
+	p := db.ListUsersParams{
+		Offset: int32((pageNumber - 1) * rowsPerPage),
+		Limit:  int32(rowsPerPage),
+	}
+
+	dbUsers, err := c.store.ListUsers(ctx, p)
 	if err != nil {
 		return nil, fmt.Errorf("query: %w", err)
 	}
