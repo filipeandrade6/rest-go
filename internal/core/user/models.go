@@ -1,10 +1,12 @@
 package user
 
 import (
+	"net/http"
 	"time"
 	"unsafe"
 
 	"github.com/filipeandrade6/rest-go/internal/data/db"
+	"github.com/go-chi/render"
 )
 
 // User represents an individual user.
@@ -55,3 +57,92 @@ func toUserSlice(dbUsrs []db.User) []User {
 	}
 	return users
 }
+
+// =============================================================================
+
+type UserResponse struct {
+	*User
+
+	// We add an additional field to the response here.. such as this
+	// elapsed computed property
+	Elapsed int64 `json:"elapsed"`
+}
+
+func NewUserResponse(user *User) *UserResponse {
+	resp := &UserResponse{User: user}
+
+	if resp.User == nil {
+		if user, _ := db
+	}
+}
+
+
+
+
+
+
+
+func NewUsersListResponse(users []*User) []render.Renderer {
+	list := []render.Renderer{}
+	for _, user := range users {
+		list = append(list, NewUserResponse(user))
+	}
+	return list
+}
+
+
+
+
+
+
+
+
+
+// type UsersListPayload struct {
+// 	Users []*User
+// }
+
+// func NewUsersListPayloadResponse(users []*User) *UsersListPayload {
+// 	return &UsersListPayload{Users: users}
+// }
+
+// func (u *UsersListPayload) Bind(r *http.Request) error {
+// 	return nil
+// }
+
+// func (u *UsersListPayload) Render(w http.ResponseWriter, r *http.Request) error {
+// 	u.Role = "collaborator"
+// 	return nil
+// }
+
+// =============================================================================
+//--
+// Request and Response payloads for the REST api.
+//
+// The payloads embed the data model objects an
+//
+// In a real-world project, it would make sense to put these payloads
+// in another file, or another sub-package.
+//--
+
+type UserPayload struct {
+	*User
+	Role string `json:"role"`
+}
+
+func NewUserPayloadResponse(user *User) *UserPayload {
+	return &UserPayload{User: user}
+}
+
+// Bind on UserPayload will run after the unmarshalling is complete, its
+// a good time to focus some post-processing after a decoding.
+func (u *UserPayload) Bind(r *http.Request) error {
+	return nil
+}
+
+func (u *UserPayload) Render(w http.ResponseWriter, r *http.Request) error {
+	u.Role = "collaborator"
+	return nil
+}
+
+// =============================================================================

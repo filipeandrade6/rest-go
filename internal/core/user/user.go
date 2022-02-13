@@ -9,6 +9,8 @@ import (
 	"fmt"
 
 	"github.com/filipeandrade6/rest-go/internal/data/db"
+	"github.com/filipeandrade6/rest-go/pkg/database"
+	"github.com/filipeandrade6/rest-go/pkg/validate"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
@@ -128,7 +130,7 @@ func (c Core) Delete(ctx context.Context, userID string) error {
 	return nil
 }
 
-// Query retrieves a list of existing users from the database.
+// List retrieves a list of existing users from the database.
 func (c Core) List(ctx context.Context, pageNumber int, rowsPerPage int) ([]User, error) {
 	p := db.ListUsersParams{
 		Offset: int32((pageNumber - 1) * rowsPerPage),
@@ -143,22 +145,22 @@ func (c Core) List(ctx context.Context, pageNumber int, rowsPerPage int) ([]User
 	return toUserSlice(dbUsers), nil
 }
 
-// // QueryByID gets the specified user from the database.
-// func (c Core) QueryByID(ctx context.Context, userID string) (User, error) {
-// 	if err := validate.CheckID(userID); err != nil {
-// 		return User{}, ErrInvalidID
-// 	}
+// GetByUserID gets the specified user from the database.
+func (c Core) GetByUserID(ctx context.Context, userID string) (User, error) {
+	if err := validate.CheckID(userID); err != nil {
+		return User{}, ErrInvalidID
+	}
 
-// 	dbUsr, err := c.store.QueryByID(ctx, userID)
-// 	if err != nil {
-// 		if errors.Is(err, database.ErrDBNotFound) {
-// 			return User{}, ErrNotFound
-// 		}
-// 		return User{}, fmt.Errorf("query: %w", err)
-// 	}
+	dbUsr, err := c.store.QueryByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, database.ErrDBNotFound) {
+			return User{}, ErrNotFound
+		}
+		return User{}, fmt.Errorf("query: %w", err)
+	}
 
-// 	return toUser(dbUsr), nil
-// }
+	return toUser(dbUsr), nil
+}
 
 // // QueryByEmail gets the specified user from the database by email.
 // func (c Core) QueryByEmail(ctx context.Context, email string) (User, error) {
