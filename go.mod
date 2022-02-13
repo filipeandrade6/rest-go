@@ -6,6 +6,7 @@ require (
 	github.com/ardanlabs/darwin v1.3.0
 	github.com/dimfeld/httptreemux/v5 v5.4.0
 	github.com/go-chi/chi/v5 v5.0.7
+	github.com/go-chi/render v1.0.1
 	github.com/go-playground/locales v0.14.0
 	github.com/go-playground/universal-translator v0.18.0
 	github.com/go-playground/validator/v10 v10.10.0
