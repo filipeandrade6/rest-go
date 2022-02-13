@@ -1,11 +1,13 @@
 package user
 
 import (
+	"encoding/json"
 	"net/http"
 	"time"
 	"unsafe"
 
 	"github.com/filipeandrade6/rest-go/internal/data/db"
+	"github.com/filipeandrade6/rest-go/pkg/web"
 	"github.com/go-chi/render"
 )
 
@@ -69,34 +71,24 @@ type UserResponse struct {
 }
 
 func NewUserResponse(user *User) *UserResponse {
-	resp := &UserResponse{User: user}
-
-	if resp.User == nil {
-		if user, _ := db
-	}
+	return &UserResponse{User: user}
 }
 
+func (ur *UserResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(ur); err != nil {
+		render.Render(w, r, web.ErrRender(err))
+	}
+	return nil // TODO pq retorna?
+}
 
-
-
-
-
-
-func NewUsersListResponse(users []*User) []render.Renderer {
+func NewUsersListResponse(users []User) []render.Renderer {
 	list := []render.Renderer{}
 	for _, user := range users {
-		list = append(list, NewUserResponse(user))
+		list = append(list, NewUserResponse(&user)) // TODO &user? passar por value ou ponteiro?
 	}
 	return list
 }
-
-
-
-
-
-
-
-
 
 // type UsersListPayload struct {
 // 	Users []*User
